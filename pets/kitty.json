@@ -1,0 +1,9 @@
+{
+  "name": "kitty",
+  "kind": "Cat",
+  "lives": 1,
+  "health": 10,
+  "happiness": 15,
+  "energy": 3,
+  "satiation": 1
+}
