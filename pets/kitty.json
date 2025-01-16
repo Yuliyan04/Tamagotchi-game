@@ -2,8 +2,8 @@
   "name": "kitty",
   "kind": "Cat",
   "lives": 1,
-  "health": 10,
-  "happiness": 15,
-  "energy": 3,
-  "satiation": 1
+  "health": 7,
+  "happiness": 8,
+  "energy": 12,
+  "satiation": 4
 }

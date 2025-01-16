@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use crate::modules::games::GameEffect;
 use crate::modules::food::get_food_for_pet;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub enum PetKind
 {
     Axalotl,
@@ -50,7 +50,7 @@ impl PetKind
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 
 pub struct Pet
 {
@@ -101,6 +101,26 @@ impl Pet
     pub fn lives(&self) -> u8 
     {
         self.lives
+    }
+
+    pub fn health(&self) -> u8 
+    {
+        self.health
+    }
+
+    pub fn satiation(&self) -> u8 
+    {
+        self.satiation
+    }
+
+    pub fn energy(&self) -> u8 
+    {
+        self.energy
+    }
+
+    pub fn happiness(&self) -> u8 
+    {
+        self.happiness
     }
 
     //Setters:
@@ -419,14 +439,11 @@ impl Pet
             self.happiness = (self.happiness + 1).min(10);
         }
 
-        println!(
-            "{} wakes up feeling refreshed! Energy restored to 10, satiation decreased by 3, and happiness adjusted.",
-            self.name
-        );
+        println!("Energy restored to 10, satiation decreased by 3, and happiness adjusted.",);
     }
 }
 
-//Implementing pet interactions
+//Implementing pet interactions - feeding and playing
 impl Pet
 {
     pub fn feed(&mut self, food_name: &str, food_map: &HashMap<String, (u8, u8)>) -> bool
@@ -562,22 +579,18 @@ impl Pet
     }
 }
 
-//We can not be with the pet for the whole let's implement leave the pet for an interval of time logic:
+//We can not be with the pet for the whole time:
 impl Pet
 {
     pub fn leave_pet_alone(&mut self, time: u8) 
     {
         println!("You have left {} alone for {} hours.", self.name, time);
 
-        // Safely reduce stats without causing underflow
         self.set_satiation(-(time as i8));
         self.set_energy(-(time as i8));
         self.set_happiness(-(time as i8));
 
-        println!(
-            "{} has been left alone. Satiation -{}, Energy -{}, Happiness -{}.",
-            self.name, time, time, time
-        );
+        println!("You left your pet alone. Satiation -{}, Energy -{}, Happiness -{}.", time, time, time);
     }
 
     pub fn leave_food_while_gone(&mut self, food_map: &HashMap<String, (u8, u8)>) 
@@ -601,11 +614,7 @@ impl Pet
         let mut input = String::new();
         io::stdin().read_line(&mut input).expect("Failed to read input");
     
-        let foods_left: Vec<String> = input
-            .trim()
-            .split(',')
-            .map(|s| s.trim().to_string())
-            .collect();
+        let foods_left: Vec<String> = input.trim().split(',').map(|s| s.trim().to_string()).collect();
     
         for food_name in foods_left 
         {

@@ -1,0 +1,9 @@
+{
+  "name": "puhcho",
+  "kind": "Cat",
+  "lives": 1,
+  "health": 9,
+  "happiness": 3,
+  "energy": 13,
+  "satiation": 18
+}

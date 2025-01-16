@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use crate::modules::pet::PetKind;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 
 pub struct GameEffect 
 {
@@ -13,14 +13,14 @@ pub struct GameEffect
 //Games:
 
 const FETCH: &str = "Fetch";
-const CHASE_THE_LASER: &str = "Chase the Laser";
-const CLIMBING_TREES: &str = "Climbing Trees";
-const PLAYING_WITH_BALL: &str = "Playing with Ball";
+const CHASE_THE_LASER: &str = "Chase the laser";
+const CLIMBING_TREES: &str = "Climbing trees";
+const PLAYING_WITH_BALL: &str = "Playing with ball";
 const SWINGING: &str = "Swinging";
-const FLYING_RACES: &str = "Flying Races";
-const HIDE_AND_SEEK: &str = "Hide and Seek";
-const SNIFFING_TRAILS: &str = "Sniffing Trails";
-const SPLASHING_WATER: &str = "Splashing Water";
+const FLYING_RACES: &str = "Flying races";
+const HIDE_AND_SEEK: &str = "Hide and seek";
+const SNIFFING_TRAILS: &str = "Sniffing trails";
+const SPLASHING_WATER: &str = "Splashing water";
 
 
 pub fn initialize_games() -> HashMap<String, GameEffect> 
@@ -124,39 +124,39 @@ pub fn get_games(pet_kind: &PetKind) -> Vec<String>
     match pet_kind 
     {
         PetKind::Axalotl => vec![
-            "Splashing Water".to_string(),
-            "Hide and Seek".to_string(),
-            "Playing with Ball".to_string(),
+            SPLASHING_WATER.to_string(),
+            HIDE_AND_SEEK.to_string(),
+            PLAYING_WITH_BALL.to_string(),
         ],
         PetKind::Cat => vec![
-            "Chase the Laser".to_string(),
-            "Climbing Trees".to_string(),
-            "Playing with Ball".to_string(),
+            CHASE_THE_LASER.to_string(),
+            CLIMBING_TREES.to_string(),
+            PLAYING_WITH_BALL.to_string(),
         ],
         PetKind::Dog => vec![
-            "Fetch".to_string(),
-            "Sniffing Trails".to_string(),
-            "Playing with Ball".to_string(),
+            FETCH.to_string(),
+            SNIFFING_TRAILS.to_string(),
+            PLAYING_WITH_BALL.to_string(),
         ],
         PetKind::Rabbit => vec![
-            "Splashing Water".to_string(),
-            "Hide and Seek".to_string(),
-            "Playing with Ball".to_string(),
+            SPLASHING_WATER.to_string(),
+            HIDE_AND_SEEK.to_string(),
+            PLAYING_WITH_BALL.to_string(),
         ],
         PetKind::Parrot => vec![
-            "Flying Races".to_string(),
-            "Hide and Seek".to_string(),
-            "Playing with Ball".to_string(),
+            FLYING_RACES.to_string(),
+            HIDE_AND_SEEK.to_string(),
+            PLAYING_WITH_BALL.to_string(),
         ],
         PetKind::Monkey => vec![
-            "Swinging".to_string(),
-            "Climbing Trees".to_string(),
-            "Hide and Seek".to_string(),
+            SWINGING.to_string(),
+            CLIMBING_TREES.to_string(),
+            HIDE_AND_SEEK.to_string(),
         ],
         PetKind::Squirrel => vec![
-            "Climbing Trees".to_string(),
-            "Hide and Seek".to_string(),
-            "Playing with Ball".to_string(),
+            CLIMBING_TREES.to_string(),
+            HIDE_AND_SEEK.to_string(),
+            PLAYING_WITH_BALL.to_string(),
         ],
     }
 }

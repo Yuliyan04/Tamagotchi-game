@@ -1,6 +1,12 @@
 use std::collections::HashMap;
 use std::io::{self, Write};
 
+use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::thread;
+use std::time::Duration;
+
+
 mod modules 
 {
     pub mod pet;
@@ -13,6 +19,7 @@ use modules::food::{initialize_food, get_food_for_pet};
 use modules::games::{initialize_games, get_games, GameEffect};
 
 
+//Creaating an object of type pet
 fn create_new_pet() -> Pet 
 {
     println!("Available pet kinds:");
@@ -32,17 +39,13 @@ fn create_new_pet() -> Pet
     print!("Enter your pet's name: ");
     io::stdout().flush().unwrap();
     let mut pet_name = String::new();
-    io::stdin()
-        .read_line(&mut pet_name)
-        .expect("Failed to read input");
+    io::stdin().read_line(&mut pet_name).expect("Failed to read input");
     let pet_name = pet_name.trim().to_string();
 
     print!("Enter your pet's kind: ");
     io::stdout().flush().unwrap();
     let mut kind_str = String::new();
-    io::stdin()
-        .read_line(&mut kind_str)
-        .expect("Failed to read input");
+    io::stdin().read_line(&mut kind_str).expect("Failed to read input");
     let kind_str = kind_str.trim();
 
     let pet_kind = match PetKind::from_str(kind_str) 
@@ -54,7 +57,7 @@ fn create_new_pet() -> Pet
             PetKind::Cat
         }
     };
-    //
+    
     let new_pet = Pet::new(pet_name, pet_kind);
     println!("\nYour pet was created!");
     new_pet.display_stats();
@@ -67,6 +70,7 @@ fn create_new_pet() -> Pet
     new_pet
 }
 
+//Loading pet from the files
 fn load_existing_pet() -> Option<Pet> 
 {
     println!("\nSaved pets list:");
@@ -111,6 +115,7 @@ fn load_existing_pet() -> Option<Pet>
     }
 }
 
+
 fn select_pet() -> Option<Pet> 
 {
     loop 
@@ -153,6 +158,7 @@ fn select_pet() -> Option<Pet>
     }
 }
 
+//Feeding pet
 fn feed_pet(pet: &mut Pet, food_map: &HashMap<String, (u8, u8)>) 
 {
     println!("\nFoods available for {}:", pet.kind().to_string());
@@ -184,6 +190,7 @@ fn feed_pet(pet: &mut Pet, food_map: &HashMap<String, (u8, u8)>)
     }
 }
 
+//Playing with the pet
 fn play_with_pet(pet: &mut Pet, games_map: &HashMap<String, GameEffect>) -> bool 
 {
     println!("\nGames available for {}:", pet.kind().to_string());
@@ -216,59 +223,87 @@ fn play_with_pet(pet: &mut Pet, games_map: &HashMap<String, GameEffect>) -> bool
     success
 }
 
-fn daily_happiness_check(pet: &mut Pet, played_today: bool) -> bool 
-{
-    if !played_today 
-    {
-        println!("{} hasn't played yet today, happiness decreased by 1.", pet.name());
-        pet.set_happiness(-1);
-    }
-    true 
-}
-    
 
-fn game_engine(pet: &mut Pet, food_map: &HashMap<String, (u8, u8)>, games_map: &HashMap<String, GameEffect>) 
+//Game menu
+pub fn print_game_menu()
 {
-    let mut played_today = false;
+    println!("<=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+==+=+=+=>");
+    println!("What would you like to do?");
+    println!("1) Feed");
+    println!("2) Play");
+    println!("3) Put to Sleep");
+    println!("4) Leave Pet Alone");
+    println!("5) Save & Exit");
+    print!("Enter choice: ");
+}
+
+
+//Another thread for 30 seconds counting in the console
+fn start_counting(pet: Arc<Mutex<Pet>>, stop_flag: Arc<AtomicBool>) 
+{
+    thread::spawn(move || {
+        while !stop_flag.load(Ordering::Relaxed) 
+        {
+            thread::sleep(Duration::from_secs(30));
+
+            let mut pet = pet.lock().unwrap();
+
+            pet.set_happiness(-1);
+            pet.set_energy(-1);
+            pet.set_satiation(-1);
+
+            pet.display_stats();
+
+            if pet.lives() == 0 && is_dead(&pet) 
+            {
+                break;
+            }
+        }
+    });
+}
+
+
+//Game engine
+fn game_engine(pet: Arc<Mutex<Pet>>, food_map: &HashMap<String, (u8, u8)>, games_map: &HashMap<String, GameEffect>,) 
+{
+    let stop_flag = Arc::new(AtomicBool::new(false));
+
+    let pet_clone = Arc::clone(&pet);
+    let stop_flag_clone = Arc::clone(&stop_flag);
+    start_counting(pet_clone, stop_flag_clone);
 
     loop 
     {
-        println!("=====================");
-        println!("What would you like to do?");
-        println!("1) Feed");
-        println!("2) Play");
-        println!("3) Put to Sleep");
-        println!("4) Leave Pet Alone");
-        println!("5) Save & Exit");
-        print!("Enter choice: ");
+        print_game_menu();
         io::stdout().flush().unwrap();
 
         let mut action = String::new();
         io::stdin().read_line(&mut action).expect("Failed to read input");
         let action = action.trim();
 
-        match action 
-        {
-            "1" => 
-            {
-                feed_pet(pet, food_map);
-                played_today = daily_happiness_check(pet, played_today);
+        match action {
+            "1" => {
+                let mut pet = pet.lock().unwrap();
+                feed_pet(&mut pet, food_map);
+                pet.display_stats();
             }
-            "2" => 
-            {
-                if play_with_pet(pet, games_map) 
+            "2" => {
+                let mut pet = pet.lock().unwrap();
+
+                if play_with_pet(&mut pet, games_map) 
                 {
-                    played_today = true;
+                    println!("You played with your pet!");
+                    pet.display_stats();
                 }
-                played_today = daily_happiness_check(pet, played_today);
+                
             }
-            "3" => 
-            {
+            "3" => {
+                let mut pet = pet.lock().unwrap();
                 if pet.check_energy() 
                 {
                     pet.sleep();
                     println!("{} is sleeping!", pet.name());
-                    played_today = false;
+                    pet.display_stats();
                 } 
                 else 
                 {
@@ -276,13 +311,12 @@ fn game_engine(pet: &mut Pet, food_map: &HashMap<String, (u8, u8)>, games_map: &
                 }
             }
             "4" => {
+                let mut pet = pet.lock().unwrap();
                 println!("How many hours will you be gone?");
                 let mut hours = String::new();
-                io::stdin()
-                    .read_line(&mut hours)
-                    .expect("Failed to read input");
-                let hours: u8 = match hours.trim().parse() 
-                {
+
+                io::stdin().read_line(&mut hours).expect("Failed to read input");
+                let hours: u8 = match hours.trim().parse() {
                     Ok(h) => h,
                     Err(_) => {
                         println!("Invalid input. Returning to menu.");
@@ -292,9 +326,8 @@ fn game_engine(pet: &mut Pet, food_map: &HashMap<String, (u8, u8)>, games_map: &
 
                 println!("Would you like to leave food for {}? (yes/no)", pet.name());
                 let mut leave_food = String::new();
-                io::stdin()
-                    .read_line(&mut leave_food)
-                    .expect("Failed to read input");
+
+                io::stdin().read_line(&mut leave_food).expect("Failed to read input");
                 let leave_food = leave_food.trim().to_lowercase();
 
                 if leave_food == "yes" 
@@ -303,54 +336,46 @@ fn game_engine(pet: &mut Pet, food_map: &HashMap<String, (u8, u8)>, games_map: &
                 }
 
                 pet.leave_pet_alone(hours);
+                pet.display_stats();
             }
-            "5" | "exit" => 
-            {
+            "5" | "exit" => {
+                stop_flag.store(true, Ordering::Relaxed);
                 println!("Saving pet...");
-                if let Err(e) = pet.save_pet_to_file() 
+
+                if let Err(e) = pet.lock().unwrap().save_pet_to_file() 
                 {
                     println!("Warning: Could not save pet: {}", e);
                 }
+
                 println!("Exiting to main menu...\n");
                 break;
             }
-            _ => 
-            {
+            _ => {
                 println!("Invalid choice. Please try again.");
             }
         };
 
+        let mut pet = pet.lock().unwrap();
         pet.check_satiation();
         pet.check_energy();
 
-        pet.is_health_zero();
-        if pet.lives() == 0 
-        {
-            if is_dead(&pet) 
-            {
-                println!("Returning to main menu...");
-                break;
-            }
-        }
-        
-        pet.display_stats();
-
-        if is_dead(pet) 
+        if is_dead(&pet) 
         {
             println!("Returning to main menu...");
+            stop_flag.store(true, Ordering::Relaxed); 
             break;
         }
     }
 }
+
 
 fn main() 
 {
     let food_map = initialize_food();
     let games_map = initialize_games();
 
-    loop 
-    {
-        println!("==================== TAMAGOTCHI GAME ====================");
+    loop {
+        println!("|===================>| TAMAGOTCHI GAME |<===================|");
         print!("Choose an option:\n");
         println!("1) Play");
         println!("2) Exit");
@@ -360,22 +385,19 @@ fn main()
         io::stdin().read_line(&mut choice).expect("Failed to read input");
         let choice = choice.trim();
 
-        match choice 
-        {
-            "1" => 
-            {
-                if let Some(mut pet) = select_pet() 
+        match choice {
+            "1" => {
+                if let Some(pet) = select_pet() 
                 {
-                    game_engine(&mut pet, &food_map, &games_map);
+                    let pet = Arc::new(Mutex::new(pet));
+                    game_engine(pet, &food_map, &games_map);
                 }
             }
-            "2" | "exit" => 
-            {
+            "2" | "exit" => {
                 println!("Goodbye!");
                 break;
             }
-            _ => 
-            {
+            _ => {
                 println!("Invalid choice. Please try again.\n");
             }
         }
